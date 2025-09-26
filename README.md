@@ -34,7 +34,7 @@ A Next.js web application for AI-powered image and video generation using FAL AI
   - Negative prompts for quality control
   - Add cinematic motion to existing images
 - **MiniMax Hailuo-02 Pro (I2V)**: Advanced 1080p image-to-video generation:
-  - Input: Image URL with drag-and-drop upload
+  - Input: Image URL with drag-and-drop upload (up to 20MB)
   - Prompt optimizer for enhanced results
   - Optional end image for custom transitions
   - High-quality 1080p video output
