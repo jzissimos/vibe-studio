@@ -17,6 +17,10 @@ export async function POST(req: NextRequest) {
     const model = (MKB as any)[modelId];
     if (!model) return NextResponse.json({ error: "Unknown model" }, { status: 400 });
 
+    console.log("Generating with model:", modelId);
+    console.log("Prompt:", prompt);
+    console.log("Params:", params);
+
     // Use fal.subscribe() which handles async operations automatically
     const result = await fal.subscribe(modelId, {
       input: {
@@ -24,6 +28,8 @@ export async function POST(req: NextRequest) {
         ...params,
       },
     });
+
+    console.log("FAL result:", JSON.stringify(result, null, 2));
 
     // Extract the media URL from the result
     const mediaUrl =
@@ -35,6 +41,7 @@ export async function POST(req: NextRequest) {
       null;
 
     if (!mediaUrl) {
+      console.error("No media URL found in result:", result);
       return NextResponse.json({ error: "No media URL in result", raw: result }, { status: 502 });
     }
 
@@ -47,9 +54,15 @@ export async function POST(req: NextRequest) {
 
   } catch (error: any) {
     console.error("FAL API error:", error);
+    console.error("Error details:", {
+      message: error?.message,
+      stack: error?.stack,
+      response: error?.response?.data
+    });
     return NextResponse.json({
       error: "Failed to generate media",
-      details: error?.message || "Unknown error"
+      details: error?.message || "Unknown error",
+      raw: error
     }, { status: 500 });
   }
 }
