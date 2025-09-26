@@ -9,6 +9,8 @@ export default function Studio() {
   const [duration, setDuration] = useState<"5" | "10">("5");
   const [aspectRatio, setAspectRatio] = useState<"16:9" | "9:16" | "1:1">("16:9");
   const [imageUrl, setImageUrl] = useState("");
+  const [endImageUrl, setEndImageUrl] = useState("");
+  const [promptOptimizer, setPromptOptimizer] = useState(true);
   const [status, setStatus] = useState("");
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<"image" | "video" | null>(null);
@@ -90,6 +92,12 @@ export default function Studio() {
         if (negativePrompt.trim()) {
           params.negative_prompt = negativePrompt;
         }
+      } else if (modelId === "fal-ai/minimax/hailuo-02/pro/image-to-video") {
+        params.image_url = imageUrl;
+        params.prompt_optimizer = promptOptimizer;
+        if (endImageUrl.trim()) {
+          params.end_image_url = endImageUrl;
+        }
       }
 
       const res = await fetch("/api/generate", {
@@ -124,6 +132,7 @@ export default function Studio() {
   const requiresImage = selectedModel.requiresImage;
   const isKlingTextToVideo = modelId === "fal-ai/kling-video/v2.5-turbo/pro/text-to-video";
   const isKlingImageToVideo = modelId === "fal-ai/kling-video/v2.5-turbo/pro/image-to-video";
+  const isMiniMaxImageToVideo = modelId === "fal-ai/minimax/hailuo-02/pro/image-to-video";
 
   return (
     <main className="p-6 space-y-4 max-w-4xl">
@@ -223,50 +232,89 @@ export default function Studio() {
       )}
 
       {/* Kling-specific controls */}
-      {(isKlingTextToVideo || isKlingImageToVideo) && (
+      {(isKlingTextToVideo || isKlingImageToVideo || isMiniMaxImageToVideo) && (
         <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
           <h3 className="font-semibold">Video Settings</h3>
           
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Duration</label>
-              <select 
-                className="border p-2 rounded w-full" 
-                value={duration} 
-                onChange={e => setDuration(e.target.value as "5" | "10")}
-              >
-                <option value="5">5 seconds</option>
-                <option value="10">10 seconds</option>
-              </select>
-            </div>
-            
-            {/* Aspect ratio only for text-to-video */}
-            {isKlingTextToVideo && (
+          {(isKlingTextToVideo || isKlingImageToVideo) && (
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Aspect Ratio</label>
+                <label className="block text-sm font-medium mb-1">Duration</label>
                 <select 
                   className="border p-2 rounded w-full" 
-                  value={aspectRatio} 
-                  onChange={e => setAspectRatio(e.target.value as "16:9" | "9:16" | "1:1")}
+                  value={duration} 
+                  onChange={e => setDuration(e.target.value as "5" | "10")}
                 >
-                  <option value="16:9">16:9 (Landscape)</option>
-                  <option value="9:16">9:16 (Portrait)</option>
-                  <option value="1:1">1:1 (Square)</option>
+                  <option value="5">5 seconds</option>
+                  <option value="10">10 seconds</option>
                 </select>
               </div>
-            )}
-          </div>
+              
+              {/* Aspect ratio only for text-to-video */}
+              {isKlingTextToVideo && (
+                <div>
+                  <label className="block text-sm font-medium mb-1">Aspect Ratio</label>
+                  <select 
+                    className="border p-2 rounded w-full" 
+                    value={aspectRatio} 
+                    onChange={e => setAspectRatio(e.target.value as "16:9" | "9:16" | "1:1")}
+                  >
+                    <option value="16:9">16:9 (Landscape)</option>
+                    <option value="9:16">9:16 (Portrait)</option>
+                    <option value="1:1">1:1 (Square)</option>
+                  </select>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* MiniMax-specific controls */}
+          {isMiniMaxImageToVideo && (
+            <div className="space-y-4">
+              <div>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={promptOptimizer}
+                    onChange={e => setPromptOptimizer(e.target.checked)}
+                    className="rounded"
+                  />
+                  <span className="text-sm font-medium">Enable Prompt Optimizer</span>
+                </label>
+                <p className="text-xs text-gray-500 mt-1">
+                  Automatically optimizes your prompt for better results
+                </p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">End Image URL (Optional)</label>
+                <input
+                  type="url"
+                  className="w-full border p-2 rounded"
+                  placeholder="https://example.com/end-frame.jpg"
+                  value={endImageUrl}
+                  onChange={e => setEndImageUrl(e.target.value)}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Optional image to use as the last frame of the video
+                </p>
+              </div>
+            </div>
+          )}
           
-          <div>
-            <label className="block text-sm font-medium mb-1">Negative Prompt (Optional)</label>
-            <input
-              type="text"
-              className="w-full border p-2 rounded"
-              placeholder="blur, distort, low quality"
-              value={negativePrompt}
-              onChange={e => setNegativePrompt(e.target.value)}
-            />
-          </div>
+          {/* Negative prompts for Kling models only */}
+          {(isKlingTextToVideo || isKlingImageToVideo) && (
+            <div>
+              <label className="block text-sm font-medium mb-1">Negative Prompt (Optional)</label>
+              <input
+                type="text"
+                className="w-full border p-2 rounded"
+                placeholder="blur, distort, low quality"
+                value={negativePrompt}
+                onChange={e => setNegativePrompt(e.target.value)}
+              />
+            </div>
+          )}
         </div>
       )}
 

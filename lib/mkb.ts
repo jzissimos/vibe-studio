@@ -1,7 +1,8 @@
 export type ModelId =
   | "fal-ai/flux/dev"
   | "fal-ai/kling-video/v2.5-turbo/pro/text-to-video"
-  | "fal-ai/kling-video/v2.5-turbo/pro/image-to-video";
+  | "fal-ai/kling-video/v2.5-turbo/pro/image-to-video"
+  | "fal-ai/minimax/hailuo-02/pro/image-to-video";
 
 interface ModelConfig {
   name: string;
@@ -43,6 +44,16 @@ export const MKB: Record<ModelId, ModelConfig> = {
     supportsNegative: true,
     requiresImage: true,
     suggest: ["camera movement", "bring image to life", "add motion"],
+  },
+  "fal-ai/minimax/hailuo-02/pro/image-to-video": {
+    name: "MiniMax Hailuo-02 Pro (I2V)",
+    type: "video",
+    defaultParams: {
+      prompt_optimizer: true
+    },
+    supportsNegative: false,
+    requiresImage: true,
+    suggest: ["natural movement", "dynamic scenes", "fluid motion"],
   },
 } as const;
 export type Mkb = typeof MKB;
