@@ -3,7 +3,7 @@ const nextConfig = {
   // App directory is now stable in Next.js 14+
   api: {
     bodyParser: {
-      sizeLimit: '50mb',
+      sizeLimit: '25mb',
     },
   },
 }
