@@ -566,7 +566,7 @@ export default function Studio() {
                 <option value="remap">Remap - Stretch to match duration</option>
               </select>
               <p className="text-xs text-gray-500 mt-1">
-                How to handle when video and audio durations don't match
+                How to handle when video and audio durations don&apos;t match
               </p>
             </div>
           )}
@@ -694,7 +694,7 @@ export default function Studio() {
             {mediaType === "video" ? (
               <video controls src={resultUrl} className="w-full max-h-96" />
             ) : (
-              <img src={resultUrl} className="w-full" />
+              <img src={resultUrl} alt="Generated result" className="w-full" />
             )}
           </div>
         </div>
