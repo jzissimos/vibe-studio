@@ -38,6 +38,11 @@ A Next.js web application for AI-powered image and video generation using FAL AI
   - Prompt optimizer for enhanced results
   - Optional end image for custom transitions
   - High-quality 1080p video output
+- **Sync Lip Sync v2 Pro (V2V)**: Professional lip synchronization:
+  - Input: Video + Audio files with drag-and-drop upload
+  - Sync modes: Cut off, loop, bounce, silence, or remap
+  - Realistic lip movements with natural facial features
+  - Preserve unique details like teeth and expressions
 
 ## Tech Stack
 
