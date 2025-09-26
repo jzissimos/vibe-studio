@@ -44,6 +44,14 @@ export default function Studio() {
   const handleFileSelect = (files: FileList | null) => {
     if (!files || files.length === 0) return;
     const file = files[0];
+    
+    // Client-side validation
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      alert(`File too large. Please select an image smaller than 5MB. Your file is ${(file.size / (1024 * 1024)).toFixed(1)}MB.`);
+      return;
+    }
+    
     uploadFile(file);
   };
 
@@ -191,7 +199,7 @@ export default function Studio() {
                     </label>
                   </p>
                   <p className="text-xs text-gray-400 mt-2">
-                    Supports JPEG, PNG, WebP, GIF, AVIF (max 10MB)
+                    Supports JPEG, PNG, WebP, GIF, AVIF (max 5MB)
                   </p>
                 </div>
               </div>
