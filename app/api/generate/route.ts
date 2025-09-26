@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
 
   // Always use webhook for reliability
   const submitUrl = new URL(`https://queue.fal.run/${modelId}` );
-  submitUrl.searchParams.set("fal_webhook", `${process.env.NEXT_PUBLIC_APP_URL}/api/fal/webhook` );
+  submitUrl.searchParams.set("fal_webhook", `https://ai-cinematographer-cexz02g5k-jzs-projects-65e2ee01.vercel.app/api/fal/webhook` );
 
   const r = await fetch(submitUrl, {
     method: "POST",
