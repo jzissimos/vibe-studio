@@ -13,7 +13,12 @@ export const MKB = {
   "fal-ai/kling-video/v2.5-turbo/pro/text-to-video": {
     name: "Kling 2.5 Turbo Pro (T2V)",
     type: "video",
-    defaultParams: { duration: 5, aspect_ratio: "16:9" },
+    defaultParams: {
+      duration: "5",
+      aspect_ratio: "16:9",
+      negative_prompt: "blur, distort, and low quality",
+      cfg_scale: 0.5
+    },
     supportsNegative: true,
     suggest: ["smooth camera movement", "dramatic lighting"],
   },
