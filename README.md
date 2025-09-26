@@ -23,7 +23,11 @@ A Next.js web application for AI-powered image and video generation using FAL AI
 ## Models Supported
 
 - **FLUX.1 [dev]**: High-quality image generation
-- **Kling 2.5 Turbo Pro**: Cinematic video generation (text-to-video)
+- **Kling 2.5 Turbo Pro (T2V)**: Cinematic video generation with advanced controls:
+  - Duration: 5 or 10 seconds
+  - Aspect ratios: 16:9, 9:16, 1:1
+  - Negative prompts
+  - CFG scale adjustment
 
 ## Tech Stack
 
