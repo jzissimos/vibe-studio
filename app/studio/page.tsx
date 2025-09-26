@@ -219,6 +219,12 @@ export default function Studio() {
         if (negativePrompt.trim()) {
           params.negative_prompt = negativePrompt;
         }
+      } else if (modelId === "fal-ai/minimax/hailuo-02/pro/image-to-video") {
+        params.image_url = imageUrl;
+        params.prompt_optimizer = promptOptimizer;
+        if (endImageUrl.trim()) {
+          params.end_image_url = endImageUrl;
+        }
       } else if (modelId === "fal-ai/sync-lipsync/v2/pro") {
         params.video_url = videoUrl;
         params.audio_url = audioUrl;
