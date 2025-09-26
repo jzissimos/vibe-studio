@@ -9,6 +9,10 @@ fal.config({
 
 export async function POST(req: NextRequest) {
   try {
+    // NOTE: Vercel may return "Authentication Required" for direct API calls (curl, etc.)
+    // but browser requests work normally. This is Vercel's API protection, not a bug.
+    // Always test functionality through the browser interface.
+
     const { modelId, prompt, params } = await req.json();
     const model = (MKB as any)[modelId];
     if (!model) return NextResponse.json({ error: "Unknown model" }, { status: 400 });
@@ -17,7 +21,6 @@ export async function POST(req: NextRequest) {
     const result = await fal.subscribe(modelId, {
       input: {
         prompt,
-        ...model.defaultParams,
         ...params,
       },
     });
