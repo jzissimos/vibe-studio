@@ -11,6 +11,7 @@ export default function Studio() {
   const [imageUrl, setImageUrl] = useState("");
   const [endImageUrl, setEndImageUrl] = useState("");
   const [promptOptimizer, setPromptOptimizer] = useState(true);
+  const [uploadingEndImage, setUploadingEndImage] = useState(false);
   const [status, setStatus] = useState("");
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<"image" | "video" | null>(null);
@@ -66,6 +67,45 @@ export default function Studio() {
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
+  };
+
+  const uploadEndImageFile = async (file: File) => {
+    setUploadingEndImage(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      setEndImageUrl(data.url);
+    } catch (error: any) {
+      alert(`End image upload failed: ${error.message}`);
+    } finally {
+      setUploadingEndImage(false);
+    }
+  };
+
+  const handleEndImageFileSelect = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    
+    // Client-side validation
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      alert(`File too large. Please select an image smaller than 10MB. Your file is ${(file.size / (1024 * 1024)).toFixed(1)}MB.`);
+      return;
+    }
+    
+    uploadEndImageFile(file);
   };
 
   const run = async () => {
@@ -287,16 +327,82 @@ export default function Studio() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-1">End Image URL (Optional)</label>
-                <input
-                  type="url"
-                  className="w-full border p-2 rounded"
-                  placeholder="https://example.com/end-frame.jpg"
-                  value={endImageUrl}
-                  onChange={e => setEndImageUrl(e.target.value)}
-                />
+                <label className="block text-sm font-medium mb-1">End Image (Optional)</label>
+                
+                {/* Drag and drop area for end image */}
+                <div
+                  className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                    uploadingEndImage ? "border-blue-400 bg-blue-50" : "border-gray-300 hover:border-gray-400"
+                  }`}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleEndImageFileSelect(e.dataTransfer.files);
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                >
+                  {endImageUrl ? (
+                    <div className="space-y-3">
+                      <div className="flex justify-center">
+                        <img src={endImageUrl} alt="End frame" className="max-w-xs max-h-32 rounded border shadow-sm" />
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-sm text-gray-600">End frame uploaded!</p>
+                        <button
+                          onClick={() => setEndImageUrl("")}
+                          className="text-sm text-red-600 hover:text-red-800 underline"
+                        >
+                          Remove end image
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="text-gray-400">
+                        <svg className="mx-auto h-8 w-8" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                          <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </div>
+                      
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {uploadingEndImage ? "Uploading..." : "Drop end image here"}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          or{" "}
+                          <label className="text-blue-600 hover:text-blue-800 cursor-pointer underline">
+                            browse
+                            <input
+                              type="file"
+                              className="hidden"
+                              accept="image/*"
+                              onChange={(e) => handleEndImageFileSelect(e.target.files)}
+                              disabled={uploadingEndImage}
+                            />
+                          </label>
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Alternative: URL input */}
+                <div className="mt-3">
+                  <input
+                    type="url"
+                    className="w-full border p-2 rounded text-sm"
+                    placeholder="https://example.com/end-frame.jpg"
+                    value={endImageUrl.startsWith("https://") ? endImageUrl : ""}
+                    onChange={(e) => {
+                      if (e.target.value) setEndImageUrl(e.target.value);
+                    }}
+                  />
+                </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Optional image to use as the last frame of the video
+                  Image to use as the last frame (optional)
                 </p>
               </div>
             </div>
