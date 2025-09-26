@@ -29,7 +29,7 @@ A Next.js web application for AI-powered image and video generation using FAL AI
   - Negative prompts
   - CFG scale adjustment
 - **Kling 2.5 Turbo Pro (I2V)**: Bring images to life with motion:
-  - Input: Image URL (JPG, PNG, WebP, etc.)
+  - Input: Image URL (JPG, PNG, WebP, etc.) or drag-and-drop file upload
   - Duration: 5 or 10 seconds
   - Negative prompts for quality control
   - Add cinematic motion to existing images
