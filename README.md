@@ -163,3 +163,4 @@ Content-Type: application/json
 ## License
 
 MIT License - see LICENSE file for details.
+# File size limits updated for Vercel deployment
