@@ -23,11 +23,13 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // Validate file size (max 10MB for Vercel)
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    // Validate file size - allow 20MB for MiniMax, 10MB for others
+    // Check if this is for MiniMax by looking at the request or a parameter
+    const isMiniMaxRequest = req.headers.get('x-model-id') === 'fal-ai/minimax/hailuo-02/pro/image-to-video';
+    const maxSize = isMiniMaxRequest ? 20 * 1024 * 1024 : 10 * 1024 * 1024; // 20MB for MiniMax, 10MB for others
     if (file.size > maxSize) {
       return NextResponse.json({
-        error: "File too large. Please upload an image smaller than 10MB."
+        error: `File too large. Please upload an image smaller than ${isMiniMaxRequest ? '20MB' : '10MB'}.`
       }, { status: 400 });
     }
 
