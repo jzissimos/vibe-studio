@@ -25,24 +25,58 @@ export default function Studio() {
   const uploadFile = async (file: File) => {
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
+      // Use client-side upload for files larger than 1MB to avoid Vercel body size limits
+      const useClientUpload = file.size > 1024 * 1024; // 1MB threshold
 
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        headers: {
-          'x-model-id': modelId // Send model ID so server knows file size limits
-        },
-        body: formData,
-      });
+      if (useClientUpload) {
+        // Client-side upload to Vercel Blob, then process to FAL
+        const { upload } = await import('@vercel/blob/client');
 
-      const data = await response.json();
+        const blob = await upload(file.name, file, {
+          access: 'public',
+          handleUploadUrl: '/api/upload/client',
+        });
 
-      if (data.error) {
-        throw new Error(data.error);
+        // Now send the blob URL to our server to process and upload to FAL
+        const formData = new FormData();
+        formData.append("blobUrl", blob.url);
+
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          headers: {
+            'x-model-id': modelId // Send model ID so server knows file size limits
+          },
+          body: formData,
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        setImageUrl(data.url);
+      } else {
+        // Direct upload for smaller files
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          headers: {
+            'x-model-id': modelId // Send model ID so server knows file size limits
+          },
+          body: formData,
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        setImageUrl(data.url);
       }
-
-      setImageUrl(data.url);
     } catch (error: any) {
       alert(`Upload failed: ${error.message}`);
     } finally {
@@ -78,24 +112,58 @@ export default function Studio() {
   const uploadEndImageFile = async (file: File) => {
     setUploadingEndImage(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
+      // Use client-side upload for files larger than 1MB to avoid Vercel body size limits
+      const useClientUpload = file.size > 1024 * 1024; // 1MB threshold
 
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        headers: {
-          'x-model-id': modelId // Send model ID so server knows file size limits
-        },
-        body: formData,
-      });
+      if (useClientUpload) {
+        // Client-side upload to Vercel Blob, then process to FAL
+        const { upload } = await import('@vercel/blob/client');
 
-      const data = await response.json();
+        const blob = await upload(file.name, file, {
+          access: 'public',
+          handleUploadUrl: '/api/upload/client',
+        });
 
-      if (data.error) {
-        throw new Error(data.error);
+        // Now send the blob URL to our server to process and upload to FAL
+        const formData = new FormData();
+        formData.append("blobUrl", blob.url);
+
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          headers: {
+            'x-model-id': modelId // Send model ID so server knows file size limits
+          },
+          body: formData,
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        setEndImageUrl(data.url);
+      } else {
+        // Direct upload for smaller files
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          headers: {
+            'x-model-id': modelId // Send model ID so server knows file size limits
+          },
+          body: formData,
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        setEndImageUrl(data.url);
       }
-
-      setEndImageUrl(data.url);
     } catch (error: any) {
       alert(`End image upload failed: ${error.message}`);
     } finally {
