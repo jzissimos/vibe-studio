@@ -1,11 +1,6 @@
 {
-  "name": "vibe-studio-neon",
   "framework": "nextjs",
   "buildCommand": "npm run build",
   "devCommand": "npm run dev",
-  "installCommand": "npm install",
-  "env": {
-    "FAL_KEY": "@fal_key",
-    "NEXT_PUBLIC_APP_URL": "https://vibe-studio-neon.vercel.app"
-  }
+  "installCommand": "npm install"
 }
