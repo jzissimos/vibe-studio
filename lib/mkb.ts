@@ -2,7 +2,8 @@ export type ModelId =
   | "fal-ai/flux/dev"
   | "fal-ai/kling-video/v2.5-turbo/pro/text-to-video"
   | "fal-ai/kling-video/v2.5-turbo/pro/image-to-video"
-  | "fal-ai/minimax/hailuo-02/pro/image-to-video";
+  | "fal-ai/minimax/hailuo-02/pro/image-to-video"
+  | "fal-ai/sync-lipsync/v2/pro";
 
 interface ModelConfig {
   name: string;
@@ -10,6 +11,8 @@ interface ModelConfig {
   defaultParams: Record<string, any>;
   supportsNegative: boolean;
   requiresImage?: boolean;
+  requiresVideo?: boolean;
+  requiresAudio?: boolean;
   suggest: string[];
 }
 
@@ -54,6 +57,17 @@ export const MKB: Record<ModelId, ModelConfig> = {
     supportsNegative: false,
     requiresImage: true,
     suggest: ["natural movement", "dynamic scenes", "fluid motion"],
+  },
+  "fal-ai/sync-lipsync/v2/pro": {
+    name: "Sync Lip Sync v2 Pro (V2V)",
+    type: "video",
+    defaultParams: {
+      sync_mode: "cut_off"
+    },
+    supportsNegative: false,
+    requiresVideo: true,
+    requiresAudio: true,
+    suggest: ["lip sync", "voice over", "dialogue"],
   },
 } as const;
 export type Mkb = typeof MKB;
