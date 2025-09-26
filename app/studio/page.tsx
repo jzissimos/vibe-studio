@@ -8,6 +8,7 @@ export default function Studio() {
   const [negativePrompt, setNegativePrompt] = useState("");
   const [duration, setDuration] = useState<"5" | "10">("5");
   const [aspectRatio, setAspectRatio] = useState<"16:9" | "9:16" | "1:1">("16:9");
+  const [imageUrl, setImageUrl] = useState("");
   const [status, setStatus] = useState("");
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<"image" | "video" | null>(null);
@@ -29,6 +30,12 @@ export default function Studio() {
       if (modelId === "fal-ai/kling-video/v2.5-turbo/pro/text-to-video") {
         params.duration = duration;
         params.aspect_ratio = aspectRatio;
+        if (negativePrompt.trim()) {
+          params.negative_prompt = negativePrompt;
+        }
+      } else if (modelId === "fal-ai/kling-video/v2.5-turbo/pro/image-to-video") {
+        params.duration = duration;
+        params.image_url = imageUrl;
         if (negativePrompt.trim()) {
           params.negative_prompt = negativePrompt;
         }
@@ -63,6 +70,9 @@ export default function Studio() {
   };
 
   const selectedModel = MKB[modelId];
+  const requiresImage = selectedModel.requiresImage;
+  const isKlingTextToVideo = modelId === "fal-ai/kling-video/v2.5-turbo/pro/text-to-video";
+  const isKlingImageToVideo = modelId === "fal-ai/kling-video/v2.5-turbo/pro/image-to-video";
 
   return (
     <main className="p-6 space-y-4 max-w-4xl">
@@ -79,13 +89,32 @@ export default function Studio() {
       
       <textarea 
         className="w-full border p-3 rounded min-h-[120px]" 
-        placeholder="Describe your shot…" 
+        placeholder={requiresImage ? "Describe the motion/action to add to your image…" : "Describe your shot…"} 
         value={prompt} 
         onChange={e => setPrompt(e.target.value)} 
       />
 
+      {/* Image URL input for image-to-video models */}
+      {requiresImage && (
+        <div>
+          <label className="block text-sm font-medium mb-1">Image URL</label>
+          <input
+            type="url"
+            className="w-full border p-2 rounded"
+            placeholder="https://example.com/your-image.jpg"
+            value={imageUrl}
+            onChange={e => setImageUrl(e.target.value)}
+          />
+          {imageUrl && (
+            <div className="mt-2">
+              <img src={imageUrl} alt="Input image" className="max-w-xs max-h-48 rounded border" />
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Kling-specific controls */}
-      {modelId === "fal-ai/kling-video/v2.5-turbo/pro/text-to-video" && (
+      {(isKlingTextToVideo || isKlingImageToVideo) && (
         <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
           <h3 className="font-semibold">Video Settings</h3>
           
@@ -102,18 +131,21 @@ export default function Studio() {
               </select>
             </div>
             
-            <div>
-              <label className="block text-sm font-medium mb-1">Aspect Ratio</label>
-              <select 
-                className="border p-2 rounded w-full" 
-                value={aspectRatio} 
-                onChange={e => setAspectRatio(e.target.value as "16:9" | "9:16" | "1:1")}
-              >
-                <option value="16:9">16:9 (Landscape)</option>
-                <option value="9:16">9:16 (Portrait)</option>
-                <option value="1:1">1:1 (Square)</option>
-              </select>
-            </div>
+            {/* Aspect ratio only for text-to-video */}
+            {isKlingTextToVideo && (
+              <div>
+                <label className="block text-sm font-medium mb-1">Aspect Ratio</label>
+                <select 
+                  className="border p-2 rounded w-full" 
+                  value={aspectRatio} 
+                  onChange={e => setAspectRatio(e.target.value as "16:9" | "9:16" | "1:1")}
+                >
+                  <option value="16:9">16:9 (Landscape)</option>
+                  <option value="9:16">9:16 (Portrait)</option>
+                  <option value="1:1">1:1 (Square)</option>
+                </select>
+              </div>
+            )}
           </div>
           
           <div>
