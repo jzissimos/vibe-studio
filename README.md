@@ -28,6 +28,11 @@ A Next.js web application for AI-powered image and video generation using FAL AI
   - Aspect ratios: 16:9, 9:16, 1:1
   - Negative prompts
   - CFG scale adjustment
+- **Kling 2.5 Turbo Pro (I2V)**: Bring images to life with motion:
+  - Input: Image URL (JPG, PNG, WebP, etc.)
+  - Duration: 5 or 10 seconds
+  - Negative prompts for quality control
+  - Add cinematic motion to existing images
 
 ## Tech Stack
 
