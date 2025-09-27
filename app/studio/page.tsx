@@ -235,6 +235,8 @@ export default function Studio() {
       setDebug({ error: error?.message || "Unknown polling error" });
     }
   };
+
+  const uploadAudioFile = async (file: File) => {
     setUploading(true);
     try {
       const formData = new FormData();
