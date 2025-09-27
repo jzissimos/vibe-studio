@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { MKB } from "@/lib/mkb";
+import GenerationProgress from "@/components/GenerationProgress";
 
 function isNonPublicUrl(u: string) {
   return /^data:/i.test(u) || /blob\.vercel-storage\.com/i.test(u);
@@ -40,6 +41,8 @@ export default function Studio() {
   const [busy, setBusy] = useState(false);
   const [dbgPayload, setDbgPayload] = useState<any>(null);
   const [dbgStartResp, setDbgStartResp] = useState<any>(null);
+  const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
+  const [queuePosition, setQueuePosition] = useState<number | undefined>(undefined);
   // Seedance parameters
   const [seedanceAspectRatio, setSeedanceAspectRatio] = useState<"21:9" | "16:9" | "4:3" | "1:1" | "3:4" | "9:16" | "auto">("auto");
   const [seedanceResolution, setSeedanceResolution] = useState<"480p" | "720p" | "1080p">("1080p");
@@ -237,29 +240,40 @@ export default function Studio() {
       const res = await fetch(url);
       const statusData = await res.json();
 
+      // Update queue position if available
+      if (statusData.progress?.queue_position !== undefined) {
+        setQueuePosition(statusData.progress.queue_position);
+      }
+
       if (statusData.status === "COMPLETE" && statusData.media_url) {
         // Job completed successfully
         setResultUrl(statusData.media_url);
         setMediaType(statusData.media_type || "video");
-        setStatus(statusData.message || "Generation completed!");
+        setStatus("COMPLETE");
         setDebug(statusData);
+        setCurrentRequestId(null);
+        setQueuePosition(undefined);
         return;
       }
 
       if (statusData.status === "FAILED") {
         // Job failed
-        setStatus(statusData.message || `Generation failed: ${statusData.details || statusData.error}`);
+        setStatus("FAILED");
         setDebug(statusData);
+        setCurrentRequestId(null);
+        setQueuePosition(undefined);
         return;
       }
 
-      // Still processing - poll again in 10 seconds
-      setStatus(statusData.message || `Status: ${statusData.status}`);
+      // Still processing - update status and poll again
+      setStatus(statusData.status || "IN_PROGRESS");
       setTimeout(() => pollLipSyncStatus(requestId, modelId), 10000);
 
     } catch (error: any) {
-      setStatus("Error checking generation status");
+      setStatus("FAILED");
       setDebug({ error: error?.message || "Unknown polling error" });
+      setCurrentRequestId(null);
+      setQueuePosition(undefined);
     }
   };
 
@@ -336,8 +350,10 @@ export default function Studio() {
     setBusy(true);
     setResultUrl(null);
     setMediaType(null);
-    setStatus("Generating…");
+    setStatus("IN_QUEUE");
     setDebug(null);
+    setCurrentRequestId(null);
+    setQueuePosition(undefined);
 
     try {
       const params: any = {};
@@ -399,8 +415,11 @@ export default function Studio() {
       const data = await res.json();
       if ((modelId === "fal-ai/sync-lipsync/v2/pro" || modelId === "fal-ai/bytedance/seedance/v1/pro/image-to-video") && data.request_id && data.status === "IN_QUEUE") {
         // Start polling for completion
-        const modelName = modelId === "fal-ai/sync-lipsync/v2/pro" ? "lip sync" : "Seedance";
-        setStatus(`${modelName} queued. Polling for completion...`);
+        setCurrentRequestId(data.request_id);
+        setStatus("IN_QUEUE");
+        if (data.raw?.queue_position !== undefined) {
+          setQueuePosition(data.raw.queue_position);
+        }
         pollLipSyncStatus(data.request_id, modelId);
         return;
       }
@@ -976,6 +995,22 @@ export default function Studio() {
             </div>
           )}
         </div>
+      )}
+
+      {/* Progress Component */}
+      {busy && currentRequestId && (
+        <GenerationProgress
+          status={status}
+          modelType={selectedModel.type}
+          modelName={selectedModel.name}
+          queuePosition={queuePosition}
+          onCancel={() => {
+            setBusy(false);
+            setCurrentRequestId(null);
+            setStatus("");
+            setQueuePosition(undefined);
+          }}
+        />
       )}
 
       {resultUrl && (
