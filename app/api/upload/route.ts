@@ -48,12 +48,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No file or blobUrl provided" }, { status: 400 });
     }
 
-    // Validate file size - allow 20MB for MiniMax, 10MB for others
-    const isMiniMaxRequest = req.headers.get('x-model-id') === 'fal-ai/minimax/hailuo-02/pro/image-to-video';
-    const maxSize = isMiniMaxRequest ? 20 * 1024 * 1024 : 10 * 1024 * 1024;
+    // Validate file size - more lenient for blob uploads (let generation validate per model)
+    let maxSize: number;
+    if (blobUrl) {
+      // For blob uploads, allow up to 20MB (maximum supported) - generation will validate per model
+      maxSize = 20 * 1024 * 1024;
+    } else {
+      // For direct uploads, validate based on model to prevent unnecessary FAL costs
+      const isMiniMaxRequest = req.headers.get('x-model-id') === 'fal-ai/minimax/hailuo-02/pro/image-to-video';
+      maxSize = isMiniMaxRequest ? 20 * 1024 * 1024 : 10 * 1024 * 1024;
+    }
+
     if (fileToProcess.size > maxSize) {
       return NextResponse.json({
-        error: `File too large. Please upload an image smaller than ${isMiniMaxRequest ? '20MB' : '10MB'}.`
+        error: `File too large. Please upload an image smaller than ${maxSize / (1024 * 1024)}MB.`,
       }, { status: 400 });
     }
 
