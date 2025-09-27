@@ -253,6 +253,7 @@ export default function Studio() {
         setDebug(statusData);
         setCurrentRequestId(null);
         setQueuePosition(undefined);
+        setBusy(false);
         return;
       }
 
@@ -262,6 +263,7 @@ export default function Studio() {
         setDebug(statusData);
         setCurrentRequestId(null);
         setQueuePosition(undefined);
+        setBusy(false);
         return;
       }
 
@@ -274,6 +276,7 @@ export default function Studio() {
       setDebug({ error: error?.message || "Unknown polling error" });
       setCurrentRequestId(null);
       setQueuePosition(undefined);
+      setBusy(false);
     }
   };
 
@@ -406,6 +409,9 @@ export default function Studio() {
         console.log("[seedance] using standard queue flow", { imageUrl, prompt, params, modelId });
       }
 
+      // Set processing status for immediate feedback
+      setStatus("IN_PROGRESS");
+      
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -426,22 +432,25 @@ export default function Studio() {
 
       if (data.error) {
         setDebug(data);
-        setStatus(`Error: ${data.error}`);
+        setStatus("FAILED");
       } else if (data.media_url) {
         setDebug(data);
         setResultUrl(data.media_url);
-        setMediaType(data.media_type || "image");
-        setStatus("Done!");
+        setMediaType(data.media_type || (data.media_url.includes(".mp4") ? "video" : "image"));
+        setStatus("COMPLETE");
       } else {
         setDebug(data);
-        setStatus("Unexpected response");
+        setStatus("FAILED");
       }
     } catch (error: any) {
-      setStatus("Network error");
+      setStatus("FAILED");
       setDebug({ error: error?.message || "Unknown error" });
+    } finally {
+      // Only set busy to false for non-queue models
+      if (!currentRequestId) {
+        setBusy(false);
+      }
     }
-
-    setBusy(false);
   };
 
   const selectedModel = MKB[modelId];
@@ -998,7 +1007,7 @@ export default function Studio() {
       )}
 
       {/* Progress Component */}
-      {busy && currentRequestId && (
+      {busy && (
         <GenerationProgress
           status={status}
           modelType={selectedModel.type}
