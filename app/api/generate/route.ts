@@ -75,6 +75,27 @@ export async function POST(req: NextRequest) {
         );
       }
 
+      // Validate image dimensions for Seedance (max 6000px width)
+      try {
+        const imageResponse = await fetch(imageUrl, { method: 'HEAD' });
+        if (!imageResponse.ok) {
+          return NextResponse.json(
+            { error: "Unable to access image URL" },
+            { status: 400 }
+          );
+        }
+
+        // Note: We can't get dimensions from HEAD request alone
+        // The validation will happen on FAL side, but we can provide better error message
+        console.log("[seedance] image URL accessible:", imageUrl);
+      } catch (e) {
+        console.log("[seedance] image URL check failed:", e);
+        return NextResponse.json(
+          { error: "Image URL is not accessible" },
+          { status: 400 }
+        );
+      }
+
       const input = {
         prompt,
         image_url: imageUrl
@@ -102,8 +123,15 @@ export async function POST(req: NextRequest) {
         const status = (e?.response?.status) || 500;
         const data = (e?.response?.data) || { message: String(e?.message || e) };
         console.log("[seedance][submit][err]", status, data);
+        
+        // Provide better error message for common issues
+        let errorMessage = "Seedance submission failed";
+        if (status === 422) {
+          errorMessage = "Image validation failed. Please ensure your image is under 6000px width and in a supported format (JPEG, PNG, WebP).";
+        }
+        
         return NextResponse.json({ 
-          error: "Seedance submission failed", 
+          error: errorMessage, 
           details: data,
           stage: "submit" 
         }, { status });

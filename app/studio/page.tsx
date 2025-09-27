@@ -840,8 +840,16 @@ export default function Studio() {
 
           {/* Seedance-specific controls - simplified per API docs */}
           {isSeedanceImageToVideo && (
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-gray-600 space-y-2">
               <p>Seedance generates a 5-second video with automatic motion from your image and prompt.</p>
+              <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
+                <p className="text-yellow-800 font-medium">⚠️ Image Requirements:</p>
+                <ul className="text-yellow-700 text-xs mt-1 space-y-1">
+                  <li>• Maximum width: 6000px</li>
+                  <li>• Supported formats: JPEG, PNG, WebP</li>
+                  <li>• Use smaller images for faster processing</li>
+                </ul>
+              </div>
             </div>
           )}
           
