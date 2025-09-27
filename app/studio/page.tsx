@@ -25,24 +25,80 @@ export default function Studio() {
   const uploadFile = async (file: File) => {
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
+      // Check file size - Vercel has a hard 4.5MB limit for serverless functions
+      const maxDirectUploadSize = 4.5 * 1024 * 1024; // 4.5MB
+      if (file.size > maxDirectUploadSize) {
+        // Use Vercel Blob for large files (secure server-generated upload URL)
+        try {
+          // Get upload URL from server (server-side auth, client uploads)
+          const urlResponse = await fetch("/api/blob/upload-url", {
+            method: "POST",
+          });
 
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        headers: {
-          'x-model-id': modelId // Send model ID so server knows file size limits
-        },
-        body: formData,
-      });
+          if (!urlResponse.ok) {
+            throw new Error("Failed to get upload URL");
+          }
 
-      const data = await response.json();
+          const { uploadUrl, url: blobUrl } = await urlResponse.json();
 
-      if (data.error) {
-        throw new Error(data.error);
+          // Upload file directly to Vercel Blob
+          const uploadResponse = await fetch(uploadUrl, {
+            method: "PUT",
+            body: file,
+            headers: {
+              "x-vercel-blob-filename": file.name,
+            },
+          });
+
+          if (!uploadResponse.ok) {
+            throw new Error("Blob upload failed");
+          }
+
+          // Now process the blob URL through our upload API to get FAL URL
+          const formData = new FormData();
+          formData.append("blobUrl", blobUrl);
+
+          const response = await fetch("/api/upload", {
+            method: "POST",
+            headers: {
+              'x-model-id': modelId // Send model ID so server knows file size limits
+            },
+            body: formData,
+          });
+
+          const data = await response.json();
+
+          if (data.error) {
+            throw new Error(data.error);
+          }
+
+          setImageUrl(data.url);
+        } catch (blobError) {
+          console.error('Blob upload failed:', blobError);
+          alert(`Large file upload failed: ${blobError instanceof Error ? blobError.message : 'Unknown error'}`);
+          return;
+        }
+      } else {
+        // Direct upload for smaller files (current working method)
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          headers: {
+            'x-model-id': modelId // Send model ID so server knows file size limits
+          },
+          body: formData,
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        setImageUrl(data.url);
       }
-
-      setImageUrl(data.url);
     } catch (error: any) {
       alert(`Upload failed: ${error.message}`);
     } finally {
