@@ -93,10 +93,10 @@ export default function Studio() {
     if (!files || files.length === 0) return;
     const file = files[0];
     
-    // Client-side validation - allow 20MB for MiniMax, 10MB for others
-    const maxSize = isMiniMaxImageToVideo ? 20 * 1024 * 1024 : 10 * 1024 * 1024; // 20MB for MiniMax, 10MB for others
+    // Client-side validation - allow up to 20MB for any image (server validates per model)
+    const maxSize = 20 * 1024 * 1024; // 20MB (maximum for MiniMax)
     if (file.size > maxSize) {
-      alert(`File too large. Please select an image smaller than ${isMiniMaxImageToVideo ? '20MB' : '10MB'}. Your file is ${(file.size / (1024 * 1024)).toFixed(1)}MB.`);
+      alert(`File too large. Please select an image smaller than 20MB. Your file is ${(file.size / (1024 * 1024)).toFixed(1)}MB.`);
       return;
     }
     
@@ -224,10 +224,10 @@ export default function Studio() {
     if (!files || files.length === 0) return;
     const file = files[0];
     
-    // Client-side validation - allow 20MB for MiniMax, 10MB for others
-    const maxSize = isMiniMaxImageToVideo ? 20 * 1024 * 1024 : 10 * 1024 * 1024; // 20MB for MiniMax, 10MB for others
+    // Client-side validation - allow up to 20MB for end images (server validates per model)
+    const maxSize = 20 * 1024 * 1024; // 20MB (maximum for MiniMax)
     if (file.size > maxSize) {
-      alert(`File too large. Please select an image smaller than ${isMiniMaxImageToVideo ? '20MB' : '10MB'}. Your file is ${(file.size / (1024 * 1024)).toFixed(1)}MB.`);
+      alert(`File too large. Please select an image smaller than 20MB. Your file is ${(file.size / (1024 * 1024)).toFixed(1)}MB.`);
       return;
     }
     
@@ -385,7 +385,7 @@ export default function Studio() {
                     </label>
                   </p>
                   <p className="text-xs text-gray-400 mt-2">
-                    Supports JPEG, PNG, WebP, GIF, AVIF (max {isMiniMaxImageToVideo ? '20MB' : '10MB'})
+                    Supports JPEG, PNG, WebP, GIF, AVIF (max 20MB)
                   </p>
                 </div>
               </div>
