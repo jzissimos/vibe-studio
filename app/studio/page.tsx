@@ -25,48 +25,24 @@ export default function Studio() {
   const uploadFile = async (file: File) => {
     setUploading(true);
     try {
-      // Check file size - Vercel has a hard 4.5MB limit for serverless functions
-      const maxDirectUploadSize = 4.5 * 1024 * 1024; // 4.5MB
-      if (file.size > maxDirectUploadSize) {
-        // Use FAL's client-side storage upload for large files
-        try {
-          const { fal } = await import('@fal-ai/client');
+      const formData = new FormData();
+      formData.append("file", file);
 
-          // Configure FAL client for uploads
-          fal.config({
-            credentials: process.env.NEXT_PUBLIC_FAL_KEY,
-          });
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        headers: {
+          'x-model-id': modelId // Send model ID so server knows file size limits
+        },
+        body: formData,
+      });
 
-          // Upload directly to FAL storage (bypasses Vercel limits)
-          const fileUrl = await fal.storage.upload(file);
+      const data = await response.json();
 
-          setImageUrl(fileUrl);
-        } catch (falError) {
-          console.error('FAL storage upload failed:', falError);
-          alert(`Large file upload failed: ${falError instanceof Error ? falError.message : 'Unknown error'}`);
-          return;
-        }
-      } else {
-        // Direct upload for smaller files (current working method)
-        const formData = new FormData();
-        formData.append("file", file);
-
-        const response = await fetch("/api/upload", {
-          method: "POST",
-          headers: {
-            'x-model-id': modelId // Send model ID so server knows file size limits
-          },
-          body: formData,
-        });
-
-        const data = await response.json();
-
-        if (data.error) {
-          throw new Error(data.error);
-        }
-
-        setImageUrl(data.url);
+      if (data.error) {
+        throw new Error(data.error);
       }
+
+      setImageUrl(data.url);
     } catch (error: any) {
       alert(`Upload failed: ${error.message}`);
     } finally {
