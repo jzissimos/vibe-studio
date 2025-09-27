@@ -3,6 +3,7 @@ export type ModelId =
   | "fal-ai/kling-video/v2.5-turbo/pro/text-to-video"
   | "fal-ai/kling-video/v2.5-turbo/pro/image-to-video"
   | "fal-ai/minimax/hailuo-02/pro/image-to-video"
+  | "fal-ai/bytedance/seedance/v1/pro/image-to-video"
   | "fal-ai/sync-lipsync/v2/pro";
 
 interface ModelConfig {
@@ -57,6 +58,14 @@ export const MKB: Record<ModelId, ModelConfig> = {
     supportsNegative: false,
     requiresImage: true,
     suggest: ["natural movement", "dynamic scenes", "fluid motion"],
+  },
+  "fal-ai/bytedance/seedance/v1/pro/image-to-video": {
+    name: "Seedance 1.0 Pro (I2V)",
+    type: "video",
+    defaultParams: {},
+    supportsNegative: false,
+    requiresImage: true,
+    suggest: ["animate image", "bring to life", "automatic motion"],
   },
   "fal-ai/sync-lipsync/v2/pro": {
     name: "Sync Lip Sync v2 Pro (V2V)",

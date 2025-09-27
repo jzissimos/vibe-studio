@@ -1,6 +1,24 @@
 "use client";
 import { useState } from "react";
 import { MKB } from "@/lib/mkb";
+import { runSeedance } from "@/lib/seedance/client";
+
+function isNonPublicUrl(u: string) {
+  return /^data:/i.test(u) || /blob\.vercel-storage\.com/i.test(u);
+}
+
+async function rehostToFal(url: string): Promise<string> {
+  // Only rehost if it's a Vercel blob URL (the upload API only handles these)
+  if (!url.includes('blob.vercel-storage.com')) return url;
+
+  const r = await fetch("/api/upload", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ blobUrl: url })
+  });
+  const j = await r.json();
+  return (j?.url as string) || url;
+}
 
 export default function Studio() {
   const [modelId, setModelId] = useState<keyof typeof MKB>("fal-ai/flux/dev");
@@ -21,6 +39,15 @@ export default function Studio() {
   const [debug, setDebug] = useState<any>(null);
   const [uploading, setUploading] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [dbgPayload, setDbgPayload] = useState<any>(null);
+  const [dbgStartResp, setDbgStartResp] = useState<any>(null);
+  // Seedance parameters
+  const [seedanceAspectRatio, setSeedanceAspectRatio] = useState<"21:9" | "16:9" | "4:3" | "1:1" | "3:4" | "9:16" | "auto">("auto");
+  const [seedanceResolution, setSeedanceResolution] = useState<"480p" | "720p" | "1080p">("1080p");
+  const [seedanceDuration, setSeedanceDuration] = useState<"3" | "4" | "5" | "6" | "7" | "8" | "9" | "10" | "11" | "12">("5");
+  const [seedanceCameraFixed, setSeedanceCameraFixed] = useState(false);
+  const [seedanceSeed, setSeedanceSeed] = useState("");
+  const [seedanceSafetyChecker, setSeedanceSafetyChecker] = useState(true);
 
   const uploadFile = async (file: File) => {
     setUploading(true);
@@ -205,33 +232,34 @@ export default function Studio() {
     }
   };
 
-  const pollLipSyncStatus = async (requestId: string) => {
+  const pollLipSyncStatus = async (requestId: string, modelId: string) => {
     try {
-      const statusRes = await fetch(`/api/generate/status?request_id=${requestId}`);
-      const statusData = await statusRes.json();
+      const url = `/api/generate/status?request_id=${encodeURIComponent(requestId)}&model_id=${encodeURIComponent(modelId)}`;
+      const res = await fetch(url);
+      const statusData = await res.json();
 
       if (statusData.status === "COMPLETE" && statusData.media_url) {
         // Job completed successfully
         setResultUrl(statusData.media_url);
         setMediaType(statusData.media_type || "video");
-        setStatus("Lip sync completed!");
+        setStatus(statusData.message || "Generation completed!");
         setDebug(statusData);
         return;
       }
 
       if (statusData.status === "FAILED") {
         // Job failed
-        setStatus(`Lip sync failed: ${statusData.details || statusData.error}`);
+        setStatus(statusData.message || `Generation failed: ${statusData.details || statusData.error}`);
         setDebug(statusData);
         return;
       }
 
       // Still processing - poll again in 10 seconds
       setStatus(statusData.message || `Status: ${statusData.status}`);
-      setTimeout(() => pollLipSyncStatus(requestId), 10000);
+      setTimeout(() => pollLipSyncStatus(requestId, modelId), 10000);
 
     } catch (error: any) {
-      setStatus("Error checking lip sync status");
+      setStatus("Error checking generation status");
       setDebug({ error: error?.message || "Unknown polling error" });
     }
   };
@@ -338,6 +366,17 @@ export default function Studio() {
         params.video_url = videoUrl;
         params.audio_url = audioUrl;
         params.sync_mode = syncMode;
+      } else if (modelId === "fal-ai/bytedance/seedance/v1/pro/image-to-video") {
+        /** Seedance: Image → Video - Use standard queue flow **/
+        // Guard to avoid 422
+        if (!imageUrl || !/^https?:\/\//i.test(imageUrl.trim())) {
+          alert("Seedance requires a public http(s) image URL.");
+          return;
+        }
+        
+        // Set image_url in params for the standard flow
+        params.image_url = imageUrl;
+        console.log("[seedance] using standard queue flow", { imageUrl, prompt, modelId });
       }
 
       const res = await fetch("/api/generate", {
@@ -347,12 +386,11 @@ export default function Studio() {
       });
 
       const data = await res.json();
-
-      // Special handling for lip sync polling
-      if (modelId === "fal-ai/sync-lipsync/v2/pro" && data.request_id && data.status === "IN_QUEUE") {
-        // Start polling for lip sync completion
-        setStatus("Lip sync queued. Polling for completion...");
-        pollLipSyncStatus(data.request_id);
+      if ((modelId === "fal-ai/sync-lipsync/v2/pro" || modelId === "fal-ai/bytedance/seedance/v1/pro/image-to-video") && data.request_id && data.status === "IN_QUEUE") {
+        // Start polling for completion
+        const modelName = modelId === "fal-ai/sync-lipsync/v2/pro" ? "lip sync" : "Seedance";
+        setStatus(`${modelName} queued. Polling for completion...`);
+        pollLipSyncStatus(data.request_id, modelId);
         return;
       }
 
@@ -382,6 +420,7 @@ export default function Studio() {
   const isKlingImageToVideo = modelId === "fal-ai/kling-video/v2.5-turbo/pro/image-to-video";
   const isMiniMaxImageToVideo = modelId === "fal-ai/minimax/hailuo-02/pro/image-to-video";
   const isSyncLipSync = modelId === "fal-ai/sync-lipsync/v2/pro";
+  const isSeedanceImageToVideo = modelId === "fal-ai/bytedance/seedance/v1/pro/image-to-video";
 
   return (
     <main className="p-6 space-y-4 max-w-4xl">
@@ -643,7 +682,7 @@ export default function Studio() {
       )}
 
       {/* Kling-specific controls */}
-      {(isKlingTextToVideo || isKlingImageToVideo || isMiniMaxImageToVideo || isSyncLipSync) && (
+      {(isKlingTextToVideo || isKlingImageToVideo || isMiniMaxImageToVideo || isSyncLipSync || isSeedanceImageToVideo) && (
         <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
           <h3 className="font-semibold">Video Settings</h3>
           
@@ -799,6 +838,13 @@ export default function Studio() {
               </div>
             </div>
           )}
+
+          {/* Seedance-specific controls - simplified per API docs */}
+          {isSeedanceImageToVideo && (
+            <div className="text-sm text-gray-600">
+              <p>Seedance generates a 5-second video with automatic motion from your image and prompt.</p>
+            </div>
+          )}
           
           {/* Negative prompts for Kling models only */}
           {(isKlingTextToVideo || isKlingImageToVideo) && (
@@ -830,6 +876,24 @@ export default function Studio() {
       )}
       
       {debug && <pre className="text-xs bg-gray-50 border p-2 rounded overflow-auto">{JSON.stringify(debug, null, 2)}</pre>}
+
+      {(dbgPayload || dbgStartResp) && (
+        <details className="mt-4 border rounded p-3 text-xs">
+          <summary>Seedance Debug (payload & start response)</summary>
+          {dbgPayload && (
+            <>
+              <div className="font-semibold mt-2">Outgoing Payload</div>
+              <pre className="whitespace-pre-wrap break-all">{JSON.stringify(dbgPayload, null, 2)}</pre>
+            </>
+          )}
+          {dbgStartResp && (
+            <>
+              <div className="font-semibold mt-2">/api/generate Start Response</div>
+              <pre className="whitespace-pre-wrap break-all">{JSON.stringify(dbgStartResp, null, 2)}</pre>
+            </>
+          )}
+        </details>
+      )}
     </main>
   );
 }
