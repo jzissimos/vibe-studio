@@ -34,34 +34,48 @@ export async function GET(req: NextRequest) {
       }
 
       if ((status as any).status === "COMPLETE" || (status as any).status === "COMPLETED") {
-        const result = await fal.queue.result(modelId, {
-          requestId: requestId,
-        });
+        try {
+          const result = await fal.queue.result(modelId, {
+            requestId: requestId,
+          });
 
-        // Extract the media URL from the result - handle different model response formats
-        const mediaUrl = 
-          (result as any)?.data?.video?.url || 
-          (result as any)?.data?.output?.[0]?.url || 
-          (result as any)?.video?.url ||
-          (result as any)?.output?.url || // Seedance format
-          (result as any)?.url; // Alternative format
+          console.log("Seedance result structure:", JSON.stringify(result, null, 2));
 
-        if (!mediaUrl) {
-          console.error("No media URL found in completed job:", result);
+          // Extract the media URL from the result - handle different model response formats
+          const mediaUrl = 
+            (result as any)?.data?.video?.url || 
+            (result as any)?.data?.output?.[0]?.url || 
+            (result as any)?.video?.url ||
+            (result as any)?.output?.url || // Seedance format
+            (result as any)?.url; // Alternative format
+
+          if (!mediaUrl) {
+            console.error("No media URL found in completed job:", result);
+            return NextResponse.json({
+              error: "Job completed but no media URL found",
+              raw: result
+            }, { status: 502 });
+          }
+
           return NextResponse.json({
-            error: "Job completed but no media URL found",
+            request_id: requestId,
+            status: "COMPLETE",
+            media_url: mediaUrl,
+            media_type: "video",
+            message: "Completed successfully!",
             raw: result
-          }, { status: 502 });
+          });
+        } catch (resultError: any) {
+          console.error("Error getting queue result:", resultError);
+          return NextResponse.json({
+            status: "FAILED",
+            message: "Error retrieving result",
+            error: {
+              message: resultError?.message || "Unknown error",
+              details: resultError?.response?.data || resultError
+            }
+          }, { status: 200 }); // Return 200 so client can handle it
         }
-
-        return NextResponse.json({
-          request_id: requestId,
-          status: "COMPLETE",
-          media_url: mediaUrl,
-          media_type: "video",
-          message: "Completed successfully!",
-          raw: result
-        });
       }
 
       if ((status as any).status === "FAILED") {

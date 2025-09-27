@@ -1,7 +1,6 @@
 "use client";
 import { useState } from "react";
 import { MKB } from "@/lib/mkb";
-import { runSeedance } from "@/lib/seedance/client";
 
 function isNonPublicUrl(u: string) {
   return /^data:/i.test(u) || /blob\.vercel-storage\.com/i.test(u);
