@@ -373,9 +373,21 @@ export default function Studio() {
           return;
         }
         
-        // Set image_url in params for the standard flow
+        // Set all Seedance parameters
         params.image_url = imageUrl;
-        console.log("[seedance] using standard queue flow", { imageUrl, prompt, modelId });
+        params.aspect_ratio = seedanceAspectRatio;
+        params.resolution = seedanceResolution;
+        params.duration = seedanceDuration;
+        params.camera_fixed = seedanceCameraFixed;
+        params.enable_safety_checker = seedanceSafetyChecker;
+        
+        // Add seed if specified (convert empty string to null, -1 for random)
+        if (seedanceSeed && seedanceSeed.trim() !== "") {
+          const seedValue = parseInt(seedanceSeed);
+          params.seed = isNaN(seedValue) ? -1 : seedValue;
+        }
+        
+        console.log("[seedance] using standard queue flow", { imageUrl, prompt, params, modelId });
       }
 
       const res = await fetch("/api/generate", {
@@ -838,10 +850,13 @@ export default function Studio() {
             </div>
           )}
 
-          {/* Seedance-specific controls - simplified per API docs */}
+          {/* Seedance-specific controls */}
           {isSeedanceImageToVideo && (
-            <div className="text-sm text-gray-600 space-y-2">
-              <p>Seedance generates a 5-second video with automatic motion from your image and prompt.</p>
+            <div className="space-y-4">
+              <div className="text-sm text-gray-600">
+                <p>Seedance generates high-quality videos with automatic motion from your image and prompt.</p>
+              </div>
+              
               <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
                 <p className="text-yellow-800 font-medium">⚠️ Image Requirements:</p>
                 <ul className="text-yellow-700 text-xs mt-1 space-y-1">
@@ -849,6 +864,100 @@ export default function Studio() {
                   <li>• Supported formats: JPEG, PNG, WebP</li>
                   <li>• Use smaller images for faster processing</li>
                 </ul>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Aspect Ratio</label>
+                  <select 
+                    className="border p-2 rounded w-full" 
+                    value={seedanceAspectRatio} 
+                    onChange={e => setSeedanceAspectRatio(e.target.value as any)}
+                  >
+                    <option value="auto">Auto (Keep Original)</option>
+                    <option value="21:9">21:9 (Ultra-wide)</option>
+                    <option value="16:9">16:9 (Landscape)</option>
+                    <option value="4:3">4:3 (Standard)</option>
+                    <option value="1:1">1:1 (Square)</option>
+                    <option value="3:4">3:4 (Portrait)</option>
+                    <option value="9:16">9:16 (Vertical)</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">Resolution</label>
+                  <select 
+                    className="border p-2 rounded w-full" 
+                    value={seedanceResolution} 
+                    onChange={e => setSeedanceResolution(e.target.value as any)}
+                  >
+                    <option value="480p">480p (Fast)</option>
+                    <option value="720p">720p (Balanced)</option>
+                    <option value="1080p">1080p (High Quality)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Duration</label>
+                  <select 
+                    className="border p-2 rounded w-full" 
+                    value={seedanceDuration} 
+                    onChange={e => setSeedanceDuration(e.target.value as any)}
+                  >
+                    <option value="3">3 seconds</option>
+                    <option value="4">4 seconds</option>
+                    <option value="5">5 seconds</option>
+                    <option value="6">6 seconds</option>
+                    <option value="7">7 seconds</option>
+                    <option value="8">8 seconds</option>
+                    <option value="9">9 seconds</option>
+                    <option value="10">10 seconds</option>
+                    <option value="11">11 seconds</option>
+                    <option value="12">12 seconds</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">Seed (Optional)</label>
+                  <input
+                    type="number"
+                    className="border p-2 rounded w-full"
+                    placeholder="-1 for random"
+                    value={seedanceSeed}
+                    onChange={e => setSeedanceSeed(e.target.value)}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Use same seed for reproducible results</p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={seedanceCameraFixed}
+                    onChange={e => setSeedanceCameraFixed(e.target.checked)}
+                    className="rounded"
+                  />
+                  <span className="text-sm font-medium">Fixed Camera Position</span>
+                </label>
+                <p className="text-xs text-gray-500 ml-6">
+                  Keep camera static instead of allowing movement
+                </p>
+
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={seedanceSafetyChecker}
+                    onChange={e => setSeedanceSafetyChecker(e.target.checked)}
+                    className="rounded"
+                  />
+                  <span className="text-sm font-medium">Enable Safety Checker</span>
+                </label>
+                <p className="text-xs text-gray-500 ml-6">
+                  Filter inappropriate content (recommended)
+                </p>
               </div>
             </div>
           )}
