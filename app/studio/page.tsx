@@ -233,15 +233,15 @@ export default function Studio() {
   const handleVideoFileSelect = (files: FileList | null) => {
     if (!files || files.length === 0) return;
     const file = files[0];
-    
-    // Client-side validation - allow larger videos for lip sync (up to 500MB+ per user report)
+
+    // Model-specific video size limits
     const isSyncLipSync = modelId === "fal-ai/sync-lipsync/v2/pro";
-    const maxSize = isSyncLipSync ? 500 * 1024 * 1024 : 10 * 1024 * 1024; // 500MB for lip sync, 10MB for others
+    const maxSize = isSyncLipSync ? 500 * 1024 * 1024 : 100 * 1024 * 1024; // 500MB for lip sync, 100MB for others
     if (file.size > maxSize) {
-      alert(`File too large. Please select a video smaller than ${isSyncLipSync ? '500MB' : '10MB'}. Your file is ${(file.size / (1024 * 1024)).toFixed(1)}MB.`);
+      alert(`File too large. Please select a video smaller than ${isSyncLipSync ? '500MB' : '100MB'}. Your file is ${(file.size / (1024 * 1024)).toFixed(1)}MB.`);
       return;
     }
-    
+
     uploadVideoFile(file);
   };
 

@@ -12,8 +12,8 @@ export async function POST(req: NextRequest) {
     const file = formData.get("file") as File;
     const blobUrl = formData.get("blobUrl") as string;
 
-    let fileUrl: string;
     let fileToProcess: File;
+    let maxSize: number;
 
     if (blobUrl) {
       // File was uploaded to Vercel Blob, download it
@@ -27,13 +27,22 @@ export async function POST(req: NextRequest) {
         // Validate file type from blob
         const allowedTypes = [
           'image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/avif',
-          'video/mp4', 'video/webm', 'video/avi', 'video/mov', 'video/mkv',
+          'video/mp4', 'video/webm', 'video/avi', 'video/mov', 'video/mkv', 'video/quicktime',
           'audio/mp3', 'audio/wav', 'audio/m4a', 'audio/flac'
         ];
         if (!allowedTypes.includes(blob.type)) {
           return NextResponse.json({
             error: "Invalid file type. Please upload a supported image, video, or audio file."
           }, { status: 400 });
+        }
+
+        // Set size limit based on file type
+        if (blob.type.startsWith('video/')) {
+          maxSize = 500 * 1024 * 1024; // 500MB for videos (lip sync support)
+        } else if (blob.type.startsWith('audio/')) {
+          maxSize = 50 * 1024 * 1024; // 50MB for audio
+        } else {
+          maxSize = 20 * 1024 * 1024; // 20MB for images
         }
 
         // Create a File from the blob for FAL upload
@@ -51,30 +60,21 @@ export async function POST(req: NextRequest) {
     } else if (file) {
       // Direct file upload (for small files)
       fileToProcess = file;
+      // For direct uploads, validate based on model to prevent unnecessary FAL costs
+      const isMiniMaxRequest = req.headers.get('x-model-id') === 'fal-ai/minimax/hailuo-02/pro/image-to-video';
+      maxSize = isMiniMaxRequest ? 20 * 1024 * 1024 : 10 * 1024 * 1024;
     } else {
       return NextResponse.json({ error: "No file or blobUrl provided" }, { status: 400 });
     }
 
-    // Validate file size - more lenient for blob uploads (let generation validate per model)
-    let maxSize: number;
-    if (blobUrl) {
-      // For blob uploads, allow up to 20MB (maximum supported) - generation will validate per model
-      maxSize = 20 * 1024 * 1024;
-    } else {
-      // For direct uploads, validate based on model to prevent unnecessary FAL costs
-      const isMiniMaxRequest = req.headers.get('x-model-id') === 'fal-ai/minimax/hailuo-02/pro/image-to-video';
-      maxSize = isMiniMaxRequest ? 20 * 1024 * 1024 : 10 * 1024 * 1024;
-    }
-
     if (fileToProcess.size > maxSize) {
       return NextResponse.json({
-        error: `File too large. Please upload an image smaller than ${maxSize / (1024 * 1024)}MB.`,
+        error: `File too large. Please upload a file smaller than ${maxSize / (1024 * 1024)}MB.`,
       }, { status: 400 });
     }
 
     // Upload to FAL storage
-    fileUrl = await fal.storage.upload(fileToProcess);
-
+    const fileUrl = await fal.storage.upload(fileToProcess);
     return NextResponse.json({
       url: fileUrl,
       fileName: fileToProcess.name,
