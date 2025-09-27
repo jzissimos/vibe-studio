@@ -30,16 +30,17 @@ export default function Studio() {
       if (file.size > maxDirectUploadSize) {
         // Use Vercel Blob client-side upload for large files
         try {
-          const { put } = await import('@vercel/blob');
+          const { upload } = await import('@vercel/blob/client');
 
-          // Upload directly to Vercel Blob (client-side, no server token needed)
-          const { url: blobUrl } = await put(file.name, file, {
+          // Upload directly to Vercel Blob (client-side, uses auto-generated token)
+          const result = await upload(file.name, file, {
             access: 'public',
+            handleUploadUrl: '/api/blob/upload',
           });
 
           // Now process the blob URL through our upload API to get FAL URL
           const formData = new FormData();
-          formData.append("blobUrl", blobUrl);
+          formData.append("blobUrl", result.url);
 
           const response = await fetch("/api/upload", {
             method: "POST",
