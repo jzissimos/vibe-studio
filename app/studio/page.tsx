@@ -28,31 +28,14 @@ export default function Studio() {
       // Check file size - Vercel has a hard 4.5MB limit for serverless functions
       const maxDirectUploadSize = 4.5 * 1024 * 1024; // 4.5MB
       if (file.size > maxDirectUploadSize) {
-        // Use Vercel Blob for large files (secure server-generated upload URL)
+        // Use Vercel Blob client-side upload for large files
         try {
-          // Get upload URL from server (server-side auth, client uploads)
-          const urlResponse = await fetch("/api/blob/upload-url", {
-            method: "POST",
+          const { put } = await import('@vercel/blob');
+
+          // Upload directly to Vercel Blob (client-side, no server token needed)
+          const { url: blobUrl } = await put(file.name, file, {
+            access: 'public',
           });
-
-          if (!urlResponse.ok) {
-            throw new Error("Failed to get upload URL");
-          }
-
-          const { uploadUrl, url: blobUrl } = await urlResponse.json();
-
-          // Upload file directly to Vercel Blob
-          const uploadResponse = await fetch(uploadUrl, {
-            method: "PUT",
-            body: file,
-            headers: {
-              "x-vercel-blob-filename": file.name,
-            },
-          });
-
-          if (!uploadResponse.ok) {
-            throw new Error("Blob upload failed");
-          }
 
           // Now process the blob URL through our upload API to get FAL URL
           const formData = new FormData();
