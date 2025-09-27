@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
 
         // Set size limit based on file type
         if (blob.type.startsWith('video/')) {
-          maxSize = 500 * 1024 * 1024; // 500MB for videos (lip sync support)
+          maxSize = 1024 * 1024 * 1024; // 1GB for videos (lip sync has no limit)
         } else if (blob.type.startsWith('audio/')) {
           maxSize = 50 * 1024 * 1024; // 50MB for audio
         } else {

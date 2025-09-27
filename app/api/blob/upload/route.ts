@@ -16,7 +16,7 @@ export async function POST(request: Request): Promise<NextResponse> {
             'video/mp4', 'video/webm', 'video/avi', 'video/mov', 'video/mkv', 'video/quicktime',
             'audio/mp3', 'audio/wav', 'audio/m4a', 'audio/flac'
           ],
-          maximumSizeInBytes: 500 * 1024 * 1024, // 500MB limit (supports lip sync large videos)
+          maximumSizeInBytes: 1024 * 1024 * 1024, // 1GB limit (supports unlimited lip sync videos)
           addRandomSuffix: true, // Generate unique filenames to avoid conflicts
         };
       },

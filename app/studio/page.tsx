@@ -234,11 +234,11 @@ export default function Studio() {
     if (!files || files.length === 0) return;
     const file = files[0];
 
-    // Model-specific video size limits
+    // Model-specific video size limits - no limit for lip sync
     const isSyncLipSync = modelId === "fal-ai/sync-lipsync/v2/pro";
-    const maxSize = isSyncLipSync ? 500 * 1024 * 1024 : 100 * 1024 * 1024; // 500MB for lip sync, 100MB for others
+    const maxSize = isSyncLipSync ? Number.MAX_SAFE_INTEGER : 100 * 1024 * 1024; // No limit for lip sync, 100MB for others
     if (file.size > maxSize) {
-      alert(`File too large. Please select a video smaller than ${isSyncLipSync ? '500MB' : '100MB'}. Your file is ${(file.size / (1024 * 1024)).toFixed(1)}MB.`);
+      alert(`File too large. Please select a video smaller than 100MB. Your file is ${(file.size / (1024 * 1024)).toFixed(1)}MB.`);
       return;
     }
 
@@ -357,18 +357,18 @@ export default function Studio() {
         <span className="text-sm text-gray-500">{status}</span>
       </div>
       
-      <textarea 
-        className="w-full border p-3 rounded min-h-[120px]" 
-        placeholder={
-          isSyncLipSync 
-            ? "Optional: Describe the lip sync style or leave blank for automatic detection" 
-            : requiresImage 
+      {!isSyncLipSync && (
+        <textarea 
+          className="w-full border p-3 rounded min-h-[120px]" 
+          placeholder={
+            requiresImage 
               ? "Describe the motion/action to add to your image…" 
               : "Describe your shot…"
-        } 
-        value={prompt} 
-        onChange={e => setPrompt(e.target.value)} 
-      />
+          } 
+          value={prompt} 
+          onChange={e => setPrompt(e.target.value)} 
+        />
+      )}
 
       {/* Image URL input for image-to-video models */}
       {requiresImage && (
