@@ -146,21 +146,58 @@ export default function Studio() {
   const uploadVideoFile = async (file: File) => {
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
+      // Check file size - Vercel has a hard 4.5MB limit for serverless functions
+      const maxDirectUploadSize = 4.5 * 1024 * 1024; // 4.5MB
+      if (file.size > maxDirectUploadSize) {
+        // Use Vercel Blob client-side upload for large videos
+        try {
+          const { upload } = await import('@vercel/blob/client');
 
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
+          // Upload directly to Vercel Blob (client-side, uses auto-generated token)
+          const result = await upload(file.name, file, {
+            access: 'public',
+            handleUploadUrl: '/api/blob/upload',
+          });
 
-      const data = await response.json();
+          // Now process the blob URL through our upload API to get FAL URL
+          const formData = new FormData();
+          formData.append("blobUrl", result.url);
 
-      if (data.error) {
-        throw new Error(data.error);
+          const response = await fetch("/api/upload", {
+            method: "POST",
+            body: formData,
+          });
+
+          const data = await response.json();
+
+          if (data.error) {
+            throw new Error(data.error);
+          }
+
+          setVideoUrl(data.url);
+        } catch (blobError) {
+          console.error('Video blob upload failed:', blobError);
+          alert(`Large video upload failed: ${blobError instanceof Error ? blobError.message : 'Unknown error'}`);
+          return;
+        }
+      } else {
+        // Direct upload for smaller videos (current method)
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        setVideoUrl(data.url);
       }
-
-      setVideoUrl(data.url);
     } catch (error: any) {
       alert(`Video upload failed: ${error.message}`);
     } finally {
@@ -197,10 +234,11 @@ export default function Studio() {
     if (!files || files.length === 0) return;
     const file = files[0];
     
-    // Client-side validation
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    // Client-side validation - allow larger videos for lip sync (up to 500MB+ per user report)
+    const isSyncLipSync = modelId === "fal-ai/sync-lipsync/v2/pro";
+    const maxSize = isSyncLipSync ? 500 * 1024 * 1024 : 10 * 1024 * 1024; // 500MB for lip sync, 10MB for others
     if (file.size > maxSize) {
-      alert(`File too large. Please select a video smaller than 10MB. Your file is ${(file.size / (1024 * 1024)).toFixed(1)}MB.`);
+      alert(`File too large. Please select a video smaller than ${isSyncLipSync ? '500MB' : '10MB'}. Your file is ${(file.size / (1024 * 1024)).toFixed(1)}MB.`);
       return;
     }
     

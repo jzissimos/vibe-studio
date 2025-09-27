@@ -25,15 +25,22 @@ export async function POST(req: NextRequest) {
         const blob = await response.blob();
 
         // Validate file type from blob
-        const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif", "image/avif"];
+        const allowedTypes = [
+          'image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/avif',
+          'video/mp4', 'video/webm', 'video/avi', 'video/mov', 'video/mkv',
+          'audio/mp3', 'audio/wav', 'audio/m4a', 'audio/flac'
+        ];
         if (!allowedTypes.includes(blob.type)) {
           return NextResponse.json({
-            error: "Invalid file type. Please upload a JPEG, PNG, WebP, GIF, or AVIF image."
+            error: "Invalid file type. Please upload a supported image, video, or audio file."
           }, { status: 400 });
         }
 
         // Create a File from the blob for FAL upload
-        fileToProcess = new File([blob], "uploaded-image.jpg", { type: blob.type });
+        const fileName = blob.type.startsWith('video/') ? "uploaded-video.mp4" :
+                        blob.type.startsWith('audio/') ? "uploaded-audio.mp3" :
+                        "uploaded-image.jpg";
+        fileToProcess = new File([blob], fileName, { type: blob.type });
       } catch (error) {
         console.error("Error processing Vercel Blob URL:", error);
         return NextResponse.json({

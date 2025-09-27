@@ -11,8 +11,12 @@ export async function POST(request: Request): Promise<NextResponse> {
       onBeforeGenerateToken: async (pathname: string) => {
         // Allow uploads for our supported file types
         return {
-          allowedContentTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/avif'],
-          maximumSizeInBytes: 20 * 1024 * 1024, // 20MB limit
+          allowedContentTypes: [
+            'image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/avif',
+            'video/mp4', 'video/webm', 'video/avi', 'video/mov', 'video/mkv',
+            'audio/mp3', 'audio/wav', 'audio/m4a', 'audio/flac'
+          ],
+          maximumSizeInBytes: 500 * 1024 * 1024, // 500MB limit (for lip sync videos)
           addRandomSuffix: true, // Generate unique filenames to avoid conflicts
         };
       },
