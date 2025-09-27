@@ -205,7 +205,36 @@ export default function Studio() {
     }
   };
 
-  const uploadAudioFile = async (file: File) => {
+  const pollLipSyncStatus = async (requestId: string) => {
+    try {
+      const statusRes = await fetch(`/api/generate/status?request_id=${requestId}`);
+      const statusData = await statusRes.json();
+
+      if (statusData.status === "COMPLETE" && statusData.media_url) {
+        // Job completed successfully
+        setResultUrl(statusData.media_url);
+        setMediaType(statusData.media_type || "video");
+        setStatus("Lip sync completed!");
+        setDebug(statusData);
+        return;
+      }
+
+      if (statusData.status === "FAILED") {
+        // Job failed
+        setStatus(`Lip sync failed: ${statusData.details || statusData.error}`);
+        setDebug(statusData);
+        return;
+      }
+
+      // Still processing - poll again in 10 seconds
+      setStatus(statusData.message || `Status: ${statusData.status}`);
+      setTimeout(() => pollLipSyncStatus(requestId), 10000);
+
+    } catch (error: any) {
+      setStatus("Error checking lip sync status");
+      setDebug({ error: error?.message || "Unknown polling error" });
+    }
+  };
     setUploading(true);
     try {
       const formData = new FormData();
@@ -316,6 +345,14 @@ export default function Studio() {
       });
 
       const data = await res.json();
+
+      // Special handling for lip sync polling
+      if (modelId === "fal-ai/sync-lipsync/v2/pro" && data.request_id && data.status === "IN_QUEUE") {
+        // Start polling for lip sync completion
+        setStatus("Lip sync queued. Polling for completion...");
+        pollLipSyncStatus(data.request_id);
+        return;
+      }
 
       if (data.error) {
         setDebug(data);

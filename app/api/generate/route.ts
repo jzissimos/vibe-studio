@@ -21,7 +21,31 @@ export async function POST(req: NextRequest) {
     console.log("Prompt:", prompt);
     console.log("Params:", params);
 
-    // Use fal.subscribe() which handles async operations automatically
+    // Special handling for lip sync - use queue.submit() for long-running jobs
+    if (modelId === "fal-ai/sync-lipsync/v2/pro") {
+      console.log("Starting lip sync job with queue...");
+
+      // Submit to queue and get request ID
+      const queueResult = await fal.queue.submit(modelId, {
+        input: {
+          prompt,
+          ...params,
+        },
+      });
+
+      console.log("Lip sync job submitted:", queueResult.request_id);
+
+      // Return immediately - frontend will poll for status
+      return NextResponse.json({
+        request_id: queueResult.request_id,
+        status: "IN_QUEUE",
+        message: "Lip sync job queued. This may take several minutes...",
+        poll_url: `/api/generate/status?request_id=${queueResult.request_id}`,
+        raw: queueResult
+      });
+    }
+
+    // Use fal.subscribe() which handles async operations automatically for other models
     const result = await fal.subscribe(modelId, {
       input: {
         prompt,
